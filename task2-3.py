@@ -1,65 +1,69 @@
-import string
+import itertools
 
-def generate_playfair_matrix(keyword):
-    # Remove duplicates and combine the keyword with the alphabet
-    alphabet = string.ascii_lowercase.replace('j', '')  # 'j' is traditionally merged with 'i'
-    matrix = []
-    keyword = ''.join(dict.fromkeys(keyword))  # Remove duplicate characters in keyword
-    keyword += ''.join([ch for ch in alphabet if ch not in keyword])  # Append remaining letters
-    return [keyword[i:i + 5] for i in range(0, len(keyword), 5)]
+def prepare_key_square(keyword):
+    alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
+    key = "".join(dict.fromkeys(keyword.upper().replace("J", "I") + alphabet))
+    return [list(key[i:i+5]) for i in range(0, 25, 5)]
 
-def find_position(matrix, char):
-    for i, row in enumerate(matrix):
-        if char in row:
-            return i, row.index(char)
+def find_position(letter, key_square):
+    for row in range(5):
+        for col in range(5):
+            if key_square[row][col] == letter:
+                return row, col
     return None
 
-def decrypt_playfair(message, matrix):
-    message = message.replace('j', 'i')  # Replace 'j' with 'i' if present
-
-    # Prepare the digraphs
-    digraphs = []
+def prepare_text(text):
+    text = text.upper().replace("J", "I").replace(" ", "")
+    new_text = ""
     i = 0
-    while i < len(message):
-        if i + 1 < len(message) and message[i] == message[i + 1]:
-            digraphs.append(message[i] + 'x')  # If two consecutive same letters, add 'x'
+    while i < len(text):
+        new_text += text[i]
+        if i + 1 < len(text) and text[i] == text[i + 1]:
+            new_text += "X"
+        elif i + 1 < len(text):
+            new_text += text[i + 1]
             i += 1
-        else:
-            digraphs.append(message[i:i + 2])
-            i += 2
+        i += 1
+    if len(new_text) % 2 != 0:
+        new_text += "X"
+    return new_text
 
-    decrypted_message = ""
-    for pair in digraphs:
-        row1, col1 = find_position(matrix, pair[0])
-        row2, col2 = find_position(matrix, pair[1])
+def encrypt_decrypt(text, key_square, encrypt=True):
+    text = prepare_text(text)
+    result = ""
+    for a, b in zip(text[0::2], text[1::2]):
+        row1, col1 = find_position(a, key_square)
+        row2, col2 = find_position(b, key_square)
+        
+        if row1 == row2:  # نفس الصف
+            result += key_square[row1][(col1 + (1 if encrypt else -1)) % 5]
+            result += key_square[row2][(col2 + (1 if encrypt else -1)) % 5]
+        elif col1 == col2:  # نفس العمود
+            result += key_square[(row1 + (1 if encrypt else -1)) % 5][col1]
+            result += key_square[(row2 + (1 if encrypt else -1)) % 5][col2]
+        else:  # تبديل المستطيل
+            result += key_square[row1][col2]
+            result += key_square[row2][col1]
+    return result
 
-        if row1 == row2:
-            decrypted_message += matrix[row1][(col1 - 1) % 5]
-            decrypted_message += matrix[row2][(col2 - 1) % 5]
-        elif col1 == col2:
-            decrypted_message += matrix[(row1 - 1) % 5][col1]
-            decrypted_message += matrix[(row2 - 1) % 5][col2]
-        else:
-            decrypted_message += matrix[row1][col2]
-            decrypted_message += matrix[row2][col1]
+def main():
+    keyword = input("Enter the keyword: ")
+    key_square = prepare_key_square(keyword)
+    print("Playfair Key Square:")
+    for row in key_square:
+        print(" ".join(row))
     
-    # Clean up the message by removing the 'x' added for double letters
-    decrypted_message = decrypted_message.replace('x', '')
+    choice = input("Encrypt or Decrypt (E/D): ").upper()
+    text = input("Enter the text: ")
     
-    return decrypted_message
+    if choice == "E":
+        result = encrypt_decrypt(text, key_square, encrypt=True)
+        print("Encrypted Text:", result)
+    elif choice == "D":
+        result = encrypt_decrypt(text, key_square, encrypt=False)
+        print("Decrypted Text:", result)
+    else:
+        print("Invalid choice!")
 
 if _name_ == "_main_":
-    keyword = input("Enter the keyword for Playfair cipher: ").lower()
-    matrix = generate_playfair_matrix(keyword)
-    print("\nPlayfair Matrix:")
-    for row in matrix:
-        print(" ".join(row))
-
-    action = input("\nWould you like to encrypt or decrypt? (e/d): ").lower()
-    text = input("Enter the message: ").lower()
-
-    if action == 'd':
-        decrypted_message = decrypt_playfair(text, matrix)
-        print(f"\nDecrypted message: {decrypted_message}")
-    else:
-        print("Encryption functionality is not yet implemented.")
+    main()
