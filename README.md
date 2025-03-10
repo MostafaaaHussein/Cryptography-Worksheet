@@ -58,8 +58,7 @@ Possible Decryption: MOSTAFA
 ## Image Example
 Below is an example output of the program:
 
-![Brute Force Attack Example](image.png)
-
+![Image](https://github.com/user-attachments/assets/e84a505b-6ec1-4a33-a36c-11634f227b74)
 ## Limitations
 - The approach is impractical for large texts due to the factorial complexity (26! possible permutations).
 - This method is only feasible for very short encrypted texts.
